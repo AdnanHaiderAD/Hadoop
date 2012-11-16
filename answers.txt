@@ -1,0 +1,486 @@
+----Question 1------
+
+#The Hadoop Streaming utility command that I have used for this task to produce lower-case versions of  text files is as follows:
+ 
+hadoop jar /opt/hadoop/hadoop-0.20.2/contrib/streaming/hadoop-0.20.2-streaming.jar -input /user/s0840844/data/input/large.txt -output /user/s0840844/data/output -mapper mapper-lowercase.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/mapper-lowercase.py -reducer cat -jobconf mapred.reduce.tasks=1 -jobconf mapred.map.tasks=10
+
+#The mapper used for this job is an executable python script which is defined as follows: 
+
+#Mapper: mapper-lowercase.py 
+#The input text file is split into lines and is fed to the stdin of the mapper process 
+
+#! /usr/bin/python
+import sys
+# The script sequentially reads each line from the stdin and outputs a lowercase version of it to stdout.
+for line in sys.stdin:
+	line= line.lower()
+	print line[:-1]
+
+
+#The use of multiple mappers takes of advantage of hadoop's share-nothing architecture. 	
+#The number of mappers and reducers used for the above job have been set to one.
+# The reducer here is the cat function which can seen as an identity map of the map outputs. Since we want the job to produce only 1 output file, it is therefore necessary to use just 1 reducer. 
+
+
+
+---Question 2----
+
+#To remove duplicate sentences from the lower-cased version of the large.txt file, I have written the following executable scripts for the mapper and reducer functions:
+# The executable script used to perform the mapper's task :
+#Mapper: mapper-lowercasededup.py
+
+
+#Hadoop allows  the execution of user-specified initalization and termination code to run at the beginning and end of each map and reduce task. Hence before processing lines from stdin, each map job is assigned a set that stores single copies of each sentence. In other words, we are actually adding the functionality of a combiner in the executable mapper script. 
+
+#! /usr/bin/python
+
+import sys
+uniqlines=set() #This is a set that stores unique lines
+for line in sys.stdin:
+
+	line=line.strip() 
+	if line not in uniqlines: 
+		uniqlines.add(line)
+		print line
+	else:
+		continue
+
+
+#The executable script created to perform the reducer task is:
+#Reducer: reducer-lowercasededup.py
+
+#! /usr/bin/python
+
+import sys
+#The reducer reads lines from stdin sequentially. It stores a copy of the previous line that has it has read in its buffer to ensure that it outputs only unique sentences to stdout.
+previousline=""
+for line in sys.stdin:
+	
+	line=line.strip()
+	if line!=previousline:
+		previousline=line
+		print line
+	else:
+		continue
+		
+
+
+
+#The use of 'line.strip()' in both these scripts removes whitespace characters from the front and back end of each line which thus allows sentences to b compared based on words only. The output of the above MapReduce execution will sometimes differ to the  output produced of the shell 'sort -u file.txt' command . Lets consider the following example:
+
+#Let the text file be test.txt whose contents are :
+"
+  hello this is me
+nope this is not me
+hello this is me
+nope this is not me
+nope this is me
+haha
+haha yea
+haha"
+
+#Now the  shell command ' sort -u test.txt ' outputs the following 'unique'  lines :
+  hello this is me
+haha
+haha yea
+hello this is me
+nope this is me
+nope this is not me
+
+#This command utilizes whitespace characters at the beginning of the text to distinguish sentences even when their content is the same.
+
+
+wheres the "cat test| python mapper-lowercasededup.py|sort|python reducer-lowercasededup.py " outputs only unique sentences based on content:
+hello this is me
+nope this is not me
+nope this is me
+haha
+haha yea
+
+
+#The Hadoop Streaming utility command that I have used for this task:
+
+hadoop jar /opt/hadoop/hadoop-0.20.2/contrib/streaming/hadoop-0.20.2-streaming.jar -input /user/s0840844/data/input/large_lower.txt -output /user/s0840844/data/output -mapper mapper-lowercasededup.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/mapper-lowercasededup.py -reducer reducer-lowercasededup.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/reducer-lowercasededup.py -jobconf mapred.reduce.tasks=1 -jobconf mapred.map.tasks=10 -jobconf stream.map.output.field.separator=
+
+#The input data is split into shards. Each map task is associated with a single block of data. In situations where duplicate copies of a sentence are located at different blocks which are not processed by the same mapper, the detection and removal of these duplicates will fail. To address this issue, I have added the following command in the jobconf option :"-jobconf stream.map.output.field.separator= " . Defining the field separator of map outputs to be the empty string results in entire sentences being considered as keys.This will guarantee that identical strings are grouped together during the 'Shuffle and Sort' phase before being fed to the reducer.
+#The use of multiple mappers takes of advantage of hadoop's share-nothing architecture. And since the output of the job is one file, hence the number of reducers used is one. 			
+
+
+
+----Question 3----
+#The task in this section involves implementing an exact version of the shell wc command. 
+
+#The contents of the text files used  for this assignment comprise of Web data.  Web data consists of both alphanumeric and non-alphanumeric characters such as '{,'\' etc. The wc shell command uses the '\w' and '\n'  characters to segment lines into words and hence strings  like "/^(([^()[\]\\" are now considered as words. 
+#To address this issue, I have created two different versions of the executable  script that implements the map function.
+
+#In version 1, The script that I have written to perform the map task is defined below:
+#Mapper:mapper_wc.py 
+
+#! /usr/bin/python
+
+import sys,re
+
+for line in sys.stdin:
+	#removing non-alphanumeric characters
+	#line= ' '.join(word for word in line.split() if word.isalnum())
+	words= line.split()#segmenting the line into a list of words using the whitespace character
+	numberOfWords=len(words)
+	print '%s\t%s' % (1,numberOfWords) # key =1(The number of current lines the mapper is reading which is always 1) and value= number of words in the line.
+
+
+
+#The output of each mapper is of the form "1 wordcount" where key=1(the current line)  and value=wordcount 
+
+# Where as in version 2, the line " ' '.join(word for word in line.split() " has been uncommneted. This  ensures  non-alphanumeric strings like '/^(([^()[\]\\' have been filtered out if sentences before performing word counts because in english language we generally regard words as strings of alphanumeric characters that have semantic relevance.. 
+
+
+
+# The executable script created to perform the functions of the reducer is as follows:
+#Reducer: reducer_wc.py
+#! /usr/bin/python
+
+import sys
+
+lineCount=0
+wordCount=0
+for line in sys.stdin:
+	linenum, wordnum =line.split('\t',1)# extracts key and value 
+	lineCount= lineCount+int(linenum)
+	wordCount= wordCount+int(wordnum)
+print'%s\t%s' % (lineCount,wordCount)	
+
+# To test the mapper and reducer script, the input file used for this task is "small.txt"
+#The command used to run the map reduce job :
+
+hadoop jar /opt/hadoop/hadoop-0.20.2/contrib/streaming/hadoop-0.20.2-streaming.jar -input /user/s0840844/data/input/small.txt -output /user/s0840844/data/output -mapper mapper_wc.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/mapper_wc.py -reducer reducer_wc.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/reducer_wc.py -jobconf mapred.reduce.tasks=1 -jobconf mapred.map.tasks=10 
+
+
+Using version 1 of the mapper function , the resultant map-reduce output is :
+hadoop dfs -cat data/output/part-00000
+10000  149552
+
+Using version 2 of the mapper,function,the resultant map-reduce output is:
+hadoop dfs -cat data/output/part-00000
+10000	123763
+
+Now when we execute the command 'wc small.txt"
+We get :
+10000  149552 1014062 small.txt
+
+Therefore to emulate the exact behaviour of the 'wc' command , the first version of the mapper function must be used along with the executable reducer script.
+
+---Question 4---
+#Exact counting methods achieve 100% accuracy at the expense of of high memory usage.In situations whee the emphasis on the performance level is greater than on the error rate, randomized counting methods can be implemented. Randomized counting methods aim to  allocate the smallest amount of space possible to  the counter through down-sampling the events.
+
+#To make approximate counts for the number of words, I have written and implmented the following executable mapper and reducer scripts that employ probabilistic counting 
+
+#Mapper : mapper_wc_prob.py
+#! /usr/bin/python
+
+import sys
+
+for line in sys.stdin:
+	numberofwords= len(line.split())#counts the number of words in the current line
+	
+	for i in range(numberofwords):
+		print 1 
+
+
+
+
+#The reducer used is:
+Reducer used:
+#! /usr/bin/python
+import sys,random
+counter=0
+random.seed(random.randint(1,1000))
+for line in sys.stdin:
+	#count=1 
+	count=int(line.strip())
+	if random.random()< pow(2,-counter):# if random number generated < b^(-f) where b =2 then increment the  counter by 1
+		counter+=1
+		random.seed(random.randint(1,1000))# the random number generator is reinitialized to a different seed to ensure that the numbers generated resemble to numbers generated from a uniform distribution between 0 and 1
+	else:
+		continue
+print counter
+				
+
+Similarly to make an approximate count on the number of lines: I have the 'cat' function as my mapper and the same reducer executable script as above with "count=int(line.strip())" commented out and "count=1" uncommented				
+			
+Testing the probabilistic counting program on the small.txt file:
+
+linecount:
+hadoop jar /opt/hadoop/hadoop-0.20.2/contrib/streaming/hadoop-0.20.2-streaming.jar -input /user/s0840844/data/input/large_lower_dedup.txt -output /user/s0840844/data/output -mapper cat -reducer reducer_wc_prob.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/reducer_wc_prob.py -jobconf mapred.reduce.tasks=1 
+
+
+hadoop dfs -cat data/output/part-00000
+
+
+hadoop jar /opt/hadoop/hadoop-0.20.2/contrib/streaming/hadoop-0.20.2-streaming.jar -input /user/s0840844/data/input/small.txt -output /user/s0840844/data/output -mapper mapper_wc_prob.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/mapper_wc_prob.py -reducer reducer_wc_prob.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/reducer_wc_prob.py -jobconf mapred.reduce.tasks=1 
+
+hadoop dfs -cat data/output/part-00000
+17
+
+
+----Question 5-----------
+
+
+ 
+hadoop jar /opt/hadoop/hadoop-0.20.2/contrib/streaming/hadoop-0.20.2-streaming.jar -input /user/s0840844/data/input/large.txt -output /user/s0840844/data/output -mapper mapper_wc.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/mapper_wc.py -reducer reducer_wc.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/reducer_wc.py -jobconf mapred.reduce.tasks=1 -jobconf mapred.map.tasks=10 
+
+
+
+
+ Exact counting method
+ text file		(line count)  (word count)
+ large.txt                   5000000	57049385
+ large_lower_dedup.txt       3148155	40819535
+
+ 
+ Probabilistic counting method
+
+
+
+line count:
+hadoop jar /opt/hadoop/hadoop-0.20.2/contrib/streaming/hadoop-0.20.2-streaming.jar -input /user/s0840844/data/input/large.txt -output /user/s0840844/data/output -mapper cat -reducer reducer_wc_prob.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/reducer_wc_prob.py -jobconf mapred.reduce.tasks=1 
+
+
+hadoop dfs -cat data/output/part-00000
+21
+
+
+hadoop jar /opt/hadoop/hadoop-0.20.2/contrib/streaming/hadoop-0.20.2-streaming.jar -input /user/s0840844/data/input/large_lower_dedup.txt -output /user/s0840844/data/output -mapper cat -reducer reducer_wc_prob.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/reducer_wc_prob.py -jobconf mapred.reduce.tasks=1 
+
+hadoop dfs -cat data/output/part-00000
+21
+
+
+Wordcount:
+hadoop jar /opt/hadoop/hadoop-0.20.2/contrib/streaming/hadoop-0.20.2-streaming.jar -input /user/s0840844/data/input/large.txt -output /user/s0840844/data/output -mapper mapper_wc_prob.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/mapper_wc_prob.py -reducer reducer_wc_prob.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/reducer_wc_prob.py -jobconf mapred.reduce.tasks=1 
+
+
+hadoop dfs -cat data/output/part-00000
+25
+
+ hadoop jar /opt/hadoop/hadoop-0.20.2/contrib/streaming/hadoop-0.20.2-streaming.jar -input /user/s0840844/data/input/large_lower_dedup.txt -output /user/s0840844/data/output -mapper mapper_wc_prob.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/mapper_wc_prob.py -reducer reducer_wc_prob.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/reducer_wc_prob.py -jobconf mapred.reduce.tasks=1
+
+hadoop dfs -cat data/output/part-00000
+25
+
+
+
+----Question 6-----
+
+# In section 6, the required task is to create executable mapper and reducer scripts and then run  map-reduce jobs to finds all the  three word sequences and their exact(approximate) respective frequencies in the deduplicated version of the large.txt file. The large.txt and its deduplicated vrsion consists of both alphanumeric and non-alphanumeric characters since their contents of web data. It is therefore neccessary to add additional code in the executable scripts that filter out the non-alphanumeric characters when creating words to from three word sequences.  
+
+
+#The executable script used to perform the mapper's function is as follows:
+#Mapper:mapper_wdseq.py
+
+
+#! /usr/bin/python
+
+import sys
+
+for line in sys.stdin:
+	#removing non-alphanumeric characters
+	line= ' '.join(word for word in line.split() if word.isalnum())
+	wordlist= line.split()#using the white space chacracter to segment the string into a list of words
+	for index,word in enumerate(wordlist):
+		if index < len(wordlist)-2:
+			seq ='%s' % (' '.join([wordlist[index],wordlist[index+1],wordlist[index+2]]))# creating three-word sequences
+			print '%s\t%s' % (seq,1)
+		else:
+			break
+
+
+#The executable script used to perform the reducer's function is as follows:
+#Reducer:reducer_wdseq.py
+
+#! /usr/bin/python
+
+import sys
+
+prev_Seq=""
+counter=0
+for line in sys.stdin:
+	
+	seq,count =line.strip().split('\t',1);#extracting key and value
+	count=int(count)
+	if prev_Seq==seq:
+		counter=counter+count
+	else:
+		if prev_Seq!="":
+			print '%s\t%s' % (prev_Seq,counter)# print three word sequence and its corresponding total count
+		prev_Seq=seq
+		counter=count	
+print '%s\t%s' % (prev_Seq,counter)
+
+#The map-reduce job submitted to find the exact frequency counts of all three-word sequences:
+hadoop jar /opt/hadoop/hadoop-0.20.2/contrib/streaming/hadoop-0.20.2-streaming.jar -input /user/s0840844/data/input/large_lower_dedup.txt -output /user/s0840844/data/output -mapper mapper_wdseq.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/mapper_wdseq.py -reducer reducer_wdseq.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/reducer_wdseq.py -jobconf mapred.reduce.tasks=10 -jobconf mapred.map.tasks=10
+
+
+
+
+#The number of possible three-word sequences is extremely large. Hence a considerable amount of memory is needed for the counters associated with each unique three word sequence. 
+ The following executable script is used as the reducer that down samples the counts assoicated with each sequence and hence reduces the amount of memory used to store the counts by only storing the exponents of b^(f) where b^(f) is an approximation of the true count.
+#Reducer:reducer_wdseq_prob.py
+
+#! /usr/bin/python
+import sys, random
+counter=0
+prev_Seq=""
+seq_counter=0
+random.seed(random.randint(1,1000))#initializing the seed of the random number generator
+for line in sys.stdin:
+	seq, count =line.strip().split('\t',1);#extract key and value
+	count=int(count)
+	if prev_Seq==seq:
+		if random.random()<pow(1.2,-counter):# if random number generated < b^(-f) where b =1.2 then increment the current three-word sequence 's count
+			counter+=1
+			seq_counter=seq_counter+count
+		else:
+			continue
+	else:
+		if prev_Seq!="":
+			print '%s\t%s' % (prev_Seq,seq_counter)
+		prev_Seq=seq
+		counter=1
+		seq_counter=count
+		random.seed(random.randint(1,1000))# re-initializing the seed of the random number generator when we see a new sequence
+
+		
+			
+print '%s\t%s' % (prev_Seq,seq_counter)	
+
+#As the reducer sequentially reads lines of stdin, for each new sequence the reducer comes accross, the seed of the random number generator is re-initialized. This ensures that the sequence of random numbers generated doesnt depend on a particular seed.		
+	
+#The map-reduce job submitted to find the approximate frequency counts of all three-word sequences:
+hadoop jar /opt/hadoop/hadoop-0.20.2/contrib/streaming/hadoop-0.20.2-streaming.jar -input /user/s0840844/data/input/large_lower_dedup.txt -output /user/s0840844/data/output -mapper mapper_wdseq.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/mapper_wdseq.py -reducer reducer_wdseq_prob.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/reducer_wdseq_prob.py -jobconf mapred.reduce.tasks=5 -jobconf mapred.map.tasks=10			
+
+
+
+
+---Question 7---
+# To take advantage of the shared-nothing architecture and to reduce the amount of computational load on a single node, I have used multiple reducers when running the map-reduce job that counts the exact (and approximate )frequencies of all three word sequences that occur in a given text file. Utilizating  muliple reducers leads to the resultant output being partitioned according to the number of specified reduce tasks. Therefore to retrieve the top twenty three word sequences it is necessary to use  and combine data from all the output partitions.
+
+# Before submitting a map-reduce job that ranks the exact(approsimate)frequencies of all three word sequences in descending order, I first stored the outputs of the map-reduce jobs completed for the previous question under the '/user/s0840844/data' directory. The output of the map -reduce job that uses the exact counting method have been stored in 'data/input2' while the the output of the map -reduce job that uses the exact counting method have been stored in 'data/input3' 
+
+
+#To rank the the three word sequences according to their exact frequencies, I have used the following command:
+
+ hadoop jar /opt/hadoop/hadoop-0.20.2/contrib/streaming/hadoop-0.20.2-streaming.jar -input data/input2/part-00000 -input data/input2/part-00001 -input data/input2/part-00002 -input data/input2/part-00003 -input data/input2/part-00004 -input data/input2/part-00005 -input data/input2/part-00006 -input data/input2/part-00007 -input data/input2/part-00008 -input data/input2/part-00009 -output data/output -mapper cat -reducer cat -jobconf stream.num.map.output.key.fields=2 -jobconf mapred.output.key.comparator.class=org.apache.hadoop.mapred.lib.KeyFieldBasedComparator -jobconf mapred.text.key.comparator.options=-k2,2nr -jobconf mapred.reduce.tasks=1
+
+# The command "stream.num.map.output.key.fields=2" creates composite intermediate keys of the form (sequence,count)
+# The command "-jobconf mapred.text.key.comparator.options=-k2,2nr" performs secondary sorting   and hence sorts the outputs by the second field of the keys i.e the counts
+
+# The twenty most frequent sequences found by the exact method :
+one of the	16659	
+as well as	11526	
+a lot of	8698	
+some of the	6827	
+if you are	6743	
+be able to	6045	
+part of the	6032	
+you want to	5740	
+this is a	5473	
+if you have	5459	
+in order to	5403	
+see all leads	5373	
+the end of	5186	
+to be a	5112	
+there is a	4579	
+the united states	4428	
+of the most	4384	
+out of the	4205	
+it is a	        4191	
+a number of	4166	
+
+
+#Similarly, to rank the the three word sequences according to their approximate frequencies, I have used the corresponding following command with the same job configurations:
+
+hadoop jar /opt/hadoop/hadoop-0.20.2/contrib/streaming/hadoop-0.20.2-streaming.jar -input data/input3/part-00000 -input data/input3/part-00001 -input data/input3/part-00002 -input data/input3/part-00003 -input data/input3/part-00004  -output data/output -mapper cat -reducer cat -jobconf stream.num.map.output.key.fields=2 -jobconf mapred.output.key.comparator.class=org.apache.hadoop.mapred.lib.KeyFieldBasedComparator -jobconf mapred.text.key.comparator.options=-k2,2nr -jobconf mapred.reduce.tasks=1
+
+
+# The twenty most frequent sequences found by the randomised method :
+three-word sequeces	Exponent f(b^f represents an approximate count)
+as well as		44	
+one of the		43	
+it is a	41	
+new meetup groups	40	
+some of the		40	
+the university of	40	
+a lot of		40	
+this is the		40	
+if you have		39	
+this is a		39	
+the use of		39	
+see all leads		39	
+a number of		38	
+the end of		38	
+to be a	38	
+you want to		38	
+if you are		38	
+of the most		38	
+the fact that		38	
+be able to		38
+
+
+-----Question 8---
+#To take the advantage of local aggregation, the functionality of a combiner is incorparated directly inside the mapper.
+
+#Mapper fused with combiner function: mapper-wdseq_combiner.py
+#! /usr/bin/python
+
+import sys
+book =dict([])#data structure that tallies up counts of three-word sequences
+for line in sys.stdin:
+	#removing non-alphanumeric characters	
+	line= ' '.join(word for word in line.split() if word.isalnum())
+	wordlist= line.split()#using the white space chacracter to segment the string
+	for index,word in enumerate(wordlist):
+		if index < len(wordlist)-2:
+			seq ='%s' % (' '.join([wordlist[index],wordlist[index+1],wordlist[index+2]]))# creating three-word sequences
+			if book.has_key(seq):
+				book[seq]= book[seq]+1 #if the mapper has already seen the sequence, increase the the tally of this sequence by 1
+			else:
+				book[seq]= 1
+			
+		else:
+			break
+	
+		
+for key,value in book.iteritems():	
+	print '%s\t%s' % (key, value) 
+
+
+#The implementation of this version reduces the amount of intermediate data translate from the mappers to reducers and hence increases algorithmic efficiency.This new mapper executable script ensures that the number of key-value pairs  emitted by each mapper is restricted to the number of unique three word sequences in each block.
+
+#Due to the increased algorithmic effeciency, the time taken to complete a streaming map-reduce job is going to be smaller. This can be confirmed by the using the shell 'time' command to compare the time taken in completing the three word sequence counting job between using an 'in-mapper combiner' script  and  normal mapper executable script.
+
+#Using in-mapper combiner script: 
+time hadoop jar /opt/hadoop/hadoop-0.20.2/contrib/streaming/hadoop-0.20.2-streaming.jar -input /user/s0840844/data/input/large_lower_dedup.txt -output /user/s0840844/data/output -mapper mapper-wdseq_combiner.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/mapper-wdseq_combiner.py -reducer reducer_wdseq.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/reducer_wdseq.py -jobconf mapred.reduce.tasks=10 -jobconf mapred.map.tasks=10
+
+Time taken:
+real	2m21.299s
+user	0m4.032s
+sys	0m0.404s
+
+# Using the normal mapper script
+time hadoop jar /opt/hadoop/hadoop-0.20.2/contrib/streaming/hadoop-0.20.2-streaming.jar -input /user/s0840844/data/input/large_lower_dedup.txt -output /user/s0840844/data/output -mapper mapper_wdseq.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/mapper_wdseq.py -reducer reducer_wdseq.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/reducer_wdseq.py -jobconf mapred.reduce.tasks=10 -jobconf mapred.map.tasks=10
+
+
+real	3m11.355s
+user	0m4.080s
+sys	0m0.412s
+
+
+---Question 9---
+
+
+Possible answer lies here 
+Exact method
+ http://hcrc1425n01.inf.ed.ac.uk:50030/jobdetails.jsp?jobid=job_201211011108_0956
+	
+Probabiilistic method	
+	http://hcrc1425n01.inf.ed.ac.uk:50030/jobdetails.jsp?jobid=job_201211011108_0957
