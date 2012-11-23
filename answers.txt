@@ -123,7 +123,7 @@ for line in sys.stdin:
 	#removing non-alphanumeric characters
 	#line= ' '.join(word for word in line.split() if word.isalnum())
 	
-	words= line.split()#segmenting the line into a list of words using the whitespace character
+	words= line.strip().split()# Removes whitespace characters at the beginning and end of the line and segment the line into a list of words using the whitespace character
 	numberOfWords=len(words)
 	print '%s\t%s' % (1,numberOfWords) # key =1(The number of current lines the mapper is reading which is always 1) and value= number of words in the line.
 
@@ -301,7 +301,7 @@ Reason: Although the number 1/(2^f) decreases exponentially as f increases, in s
 
 ----Question 6-----
 
-# In section 6, the required task is to create executable mapper and reducer scripts and then run  map-reduce jobs to finds all the  three word sequences and their exact(approximate) respective frequencies in the deduplicated version of the large.txt file. The large.txt and its deduplicated vrsion consists of both alphanumeric and non-alphanumeric characters since their contents of web data. It is therefore neccessary to add additional code in the executable scripts that filter out the non-alphanumeric characters when creating words to from three word sequences.  
+# In section 6, the required task is to create executable mapper and reducer scripts to run a map-reduce job that finds all the  three word sequences and their exact(approximate) respective frequencies in the deduplicated version of the large.txt file. Both the large.txt and its deduplicated version consists of both alphanumeric and non-alphanumeric characters since their contents consist of web data. It is therefore neccessary to add additional code in the  mapper executable script to filter out the non-alphanumeric strings such as "/^(([^()[\]\\"  from the deduplicated version when extracting words to form three word sequences.  
 
 
 #The executable script used to perform the mapper's function is as follows:
@@ -314,8 +314,8 @@ import sys
 
 for line in sys.stdin:
 	#removing non-alphanumeric characters
-	line= ' '.join(word for word in line.split() if word.isalnum())
-	wordlist= line.split()#using the white space chacracter to segment the string into a list of words
+	line= ' '.join(word for word in line.split() if word.isalnum()) # ensures  non-alphanumeric strings like '/^(([^()[\]\\' are removed from sentences before performing three word sequence counts.
+	wordlist= line.split()#using the white space character to segment the string into a list of words. This command also removes the newline character '\n' at the end of each line(Each line read from std.in contains a string of characters followed by the newline character).
 	for index,word in enumerate(wordlist):
 		if index < len(wordlist)-2:
 			seq ='%s' % (' '.join([wordlist[index],wordlist[index+1],wordlist[index+2]]))# creating three-word sequences
@@ -346,14 +346,17 @@ for line in sys.stdin:
 		counter=count	
 print '%s\t%s' % (prev_Seq,counter)
 
+The reducer reads lines from stdin sequentially. It stores a copy of the previous line in its buffer and compares it with the current line. If both lines are identical then it updates the counter by 1. Else it prints the previous line with current counter value and before setting the counter to 1.
+
 #The map-reduce job submitted to find the exact frequency counts of all three-word sequences:
 hadoop jar /opt/hadoop/hadoop-0.20.2/contrib/streaming/hadoop-0.20.2-streaming.jar -input /user/s0840844/data/input/large_lower_dedup.txt -output /user/s0840844/data/output -mapper mapper_wdseq.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/mapper_wdseq.py -reducer reducer_wdseq.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/reducer_wdseq.py -jobconf mapred.reduce.tasks=10 -jobconf mapred.map.tasks=10
 
+To reduce the computational load on a single node, multiple reducers have been used by the execution framework. The number of reducers used for the above MapReduce job has been specified during the submission of the MapReduce stream job.
 
 
 
-#The number of possible three-word sequences is extremely large. Hence a considerable amount of memory is needed for the counters associated with each unique three word sequence. 
- The following executable script is used as the reducer that down samples the counts assoicated with each sequence and hence reduces the amount of memory used to store the counts by only storing the exponents of b^(f) where b^(f) is an approximation of the true count.
+Since there is a large number of possible three-word sequences, a considerable amount of memory is needed for the counters associated with each unique three word sequence. 
+The following executable script is used as the reducer that down samples the counts associated with each sequence and hence reduces the amount of memory used to store the counts by only storing the exponents of b^(f) where b^(f) is an approximation of the true count. For this part of the excercise, I have set b=1.2( See Question 7 for an explanation)
 #Reducer:reducer_wdseq_prob.py
 
 #! /usr/bin/python
@@ -383,7 +386,7 @@ for line in sys.stdin:
 			
 print '%s\t%s' % (prev_Seq,seq_counter)	
 
-#As the reducer sequentially reads lines of stdin, for each new sequence the reducer comes accross, the seed of the random number generator is re-initialized. This ensures that the sequence of random numbers generated doesnt depend on a particular seed.		
+As the reducer sequentially reads lines of stdin, for each new sequence the reducer comes accross, the seed of the random number generator is re-initialized. This ensures that the sequence of random numbers generated doesnt depend on a particular seed.		
 	
 #The map-reduce job submitted to find the approximate frequency counts of all three-word sequences:
 hadoop jar /opt/hadoop/hadoop-0.20.2/contrib/streaming/hadoop-0.20.2-streaming.jar -input /user/s0840844/data/input/large_lower_dedup.txt -output /user/s0840844/data/output -mapper mapper_wdseq.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/mapper_wdseq.py -reducer reducer_wdseq_prob.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/reducer_wdseq_prob.py -jobconf mapred.reduce.tasks=5 -jobconf mapred.map.tasks=10			
@@ -392,19 +395,19 @@ hadoop jar /opt/hadoop/hadoop-0.20.2/contrib/streaming/hadoop-0.20.2-streaming.j
 
 
 ---Question 7---
-# To take advantage of the shared-nothing architecture and to reduce the amount of computational load on a single node, I have used multiple reducers when running the map-reduce job that counts the exact (and approximate )frequencies of all three word sequences that occur in a given text file. Utilizating  muliple reducers leads to the resultant output being partitioned according to the number of specified reduce tasks. Therefore to retrieve the top twenty three word sequences it is necessary to use  and combine data from all the output partitions.
+# To take advantage of the shared-nothing architecture and to reduce the amount of computational load on a single node, I have used multiple reducers when running the map-reduce job to count the exact (and approximate )frequencies of all three word sequences that occur in a given text file. Utilizing  muliple reducers leads to the resultant output being partitioned according to the number of specified reduce tasks. Therefore to retrieve the top twenty three word sequences it is necessary to use  and combine data from all the output partitions.
 
-# Before submitting a map-reduce job that ranks the exact(approsimate)frequencies of all three word sequences in descending order, I first stored the outputs of the map-reduce jobs completed for the previous question under the '/user/s0840844/data' directory. The output of the map -reduce job that uses the exact counting method have been stored in 'data/input2' while the the output of the map -reduce job that uses the exact counting method have been stored in 'data/input3' 
+Before submitting a map-reduce job that ranks the exact(approsimate)frequencies of all three word sequences in descending order, I first stored the outputs of the map-reduce jobs completed for the previous question under the '/user/s0840844/data' directory. The output of the MapReduce job that uses the exact counting method have been stored in 'data/input2' while the the output of the MapReduce job that uses the exact counting method have been stored in 'data/input3' 
 
 
-#To rank the the three word sequences according to their exact frequencies, I have used the following command:
+To rank the the three word sequences according to their exact frequencies, I have used the following command:
 
  hadoop jar /opt/hadoop/hadoop-0.20.2/contrib/streaming/hadoop-0.20.2-streaming.jar -input data/input2/part-00000 -input data/input2/part-00001 -input data/input2/part-00002 -input data/input2/part-00003 -input data/input2/part-00004 -input data/input2/part-00005 -input data/input2/part-00006 -input data/input2/part-00007 -input data/input2/part-00008 -input data/input2/part-00009 -output data/output -mapper cat -reducer cat -jobconf stream.num.map.output.key.fields=2 -jobconf mapred.output.key.comparator.class=org.apache.hadoop.mapred.lib.KeyFieldBasedComparator -jobconf mapred.text.key.comparator.options=-k2,2nr -jobconf mapred.reduce.tasks=1
 
 # The command "stream.num.map.output.key.fields=2" creates composite intermediate keys of the form (sequence,count)
 # The command "-jobconf mapred.text.key.comparator.options=-k2,2nr" performs secondary sorting   and hence sorts the outputs by the second field of the keys i.e the counts
 
-# The twenty most frequent sequences found by the exact method :
+The twenty most frequent sequences found by the exact method :
 one of the	16659	
 as well as	11526	
 a lot of	8698	
@@ -418,7 +421,7 @@ if you have	5459
 in order to	5403	
 see all leads	5373	
 the end of	5186	
-to be a	5112	
+to be a	        5112	
 there is a	4579	
 the united states	4428	
 of the most	4384	
@@ -427,12 +430,12 @@ it is a	        4191
 a number of	4166	
 
 
-#Similarly, to rank the the three word sequences according to their approximate frequencies, I have used the corresponding following command with the same job configurations:
+Similarly, to rank the the three word sequences according to their approximate frequencies, I have used the corresponding following command with the same job configurations:
 
 hadoop jar /opt/hadoop/hadoop-0.20.2/contrib/streaming/hadoop-0.20.2-streaming.jar -input data/input3/part-00000 -input data/input3/part-00001 -input data/input3/part-00002 -input data/input3/part-00003 -input data/input3/part-00004  -output data/output -mapper cat -reducer cat -jobconf stream.num.map.output.key.fields=2 -jobconf mapred.output.key.comparator.class=org.apache.hadoop.mapred.lib.KeyFieldBasedComparator -jobconf mapred.text.key.comparator.options=-k2,2nr -jobconf mapred.reduce.tasks=1
 
 
-# The twenty most frequent sequences found by the randomised method :
+The twenty most frequent sequences found by the randomized method :
 three-word sequeces	Exponent f(b^f represents an approximate count)
 as well as		44	
 one of the		43	
@@ -456,8 +459,10 @@ the fact that		38
 be able to		38
 
 
+Setting the value of b to its default value 2 causes the estimates of the true frequencies to be inaccurate up to a binary order of magnitude. The aim here is to find the 20 most frequent three-word sequences. Hence inexact counts can be used as long as we get a relatively accurate ranking. To improve the accuracy of the ranking, I have used a smaller value for 'b'.  Using a smaller base allows for obtaining more accurate estimates at the cost of a smaller maximum frequency while using almost the same number of bits. The reducer now has to read lesser number of lines on average before incrementing the counter. Although having b^f < 2^f  results in the approximate count being smaller, the number of times the reducer updates the counter is now greater on average. And the since the value of the exponent f determines the ranking of the three word sequences, we are more likely to get a better accurate ranking than running the MapReduce job with the default value 2.
+
 -----Question 8---
-#To take the advantage of local aggregation, the functionality of a combiner is incorparated directly inside the mapper.
+To take the advantage of local aggregation, the functionality of a combiner is incorporated directly inside the mapper.
 
 #Mapper fused with combiner function: mapper-wdseq_combiner.py
 #! /usr/bin/python
@@ -484,9 +489,9 @@ for key,value in book.iteritems():
 	print '%s\t%s' % (key, value) 
 
 
-#The implementation of this version reduces the amount of intermediate data translate from the mappers to reducers and hence increases algorithmic efficiency.This new mapper executable script ensures that the number of key-value pairs  emitted by each mapper is restricted to the number of unique three word sequences in each block.
+The implementation of this version reduces the amount of intermediate data translate from the mappers to reducers and hence increases algorithmic efficiency.This new mapper executable script ensures that the number of key-value pairs  emitted by each mapper is restricted to the number of unique three word sequences in each block.
 
-#Due to the increased algorithmic effeciency, the time taken to complete a streaming map-reduce job is going to be smaller. This can be confirmed by the using the shell 'time' command to compare the time taken in completing the three word sequence counting job between using an 'in-mapper combiner' script  and  normal mapper executable script.
+Due to the increased algorithmic effeciency, the time taken to complete a streaming map-reduce job is going to be smaller. This can be confirmed by the using the shell 'time' command to compare the time taken in completing the three word sequence counting job between using an 'in-mapper combiner' script  and  normal mapper executable script.
 
 #Using in-mapper combiner script: 
 time hadoop jar /opt/hadoop/hadoop-0.20.2/contrib/streaming/hadoop-0.20.2-streaming.jar -input /user/s0840844/data/input/large_lower_dedup.txt -output /user/s0840844/data/output -mapper mapper-wdseq_combiner.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/mapper-wdseq_combiner.py -reducer reducer_wdseq.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/reducer_wdseq.py -jobconf mapred.reduce.tasks=10 -jobconf mapred.map.tasks=10
