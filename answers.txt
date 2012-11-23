@@ -243,11 +243,18 @@ Therefore the approximate word count is 2^18=262144
 Note : For all jobs the number of reducers is set to 1 in order to ensure that the results are stored in 1 file, .
 
 The hadoop utility command used to find the total number of sentences and words in the 'large.txt':
-hadoop jar /opt/hadoop/hadoop-0.20.2/contrib/streaming/hadoop-0.20.2-streaming.jar -input /user/s0840844/data/input/large.txt -output /user/s0840844/data/output -mapper mapper_wc.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/mapper_wc.py -reducer reducer_wc.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/reducer_wc.py -jobconf mapred.reduce.tasks=1 -jobconf mapred.map.tasks=10 
+hadoop jar /opt/hadoop/hadoop-0.20.2/contrib/streaming/hadoop-0.20.2-streaming.jar -input /user/s0840844/data/input/large.txt -output /user/s0840844/data/output -mapper mapper_wc.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/mapper_wc.py -reducer reducer_wc.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/reducer_wc.py -jobconf mapred.reduce.tasks=10 -jobconf mapred.map.tasks=10 
+
+To take advantage of the shared-nothing architecture and to reduce the amount of computational load on a single node, multiple reducers have been used. The outputs of the completed map-reduce jobs  are stored temporarily in the '/user/s0840844/data.input5' directory.To aggregate the counts I have used the same executable reducer script and ran the following hadoop utility command :
+
+hadoop jar /opt/hadoop/hadoop-0.20.2/contrib/streaming/hadoop-0.20.2-streaming.jar -input data/input5/part-00000 -input data/input5/part-00001 -input data/input5/part-00002 -input data/input5/part-00003 -input data/input5/part-00004 -input data/input5/part-00005 -input data/input5/part-00006 -input data/input5/part-00007 -input data/input5/part-00008 -input data/input5/part-00009 -output data/output -mapper cat -reducer reducer_wc.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/reducer_wc.py -jobconf mapred.reduce.tasks=1 -jobconf mapred.map.tasks=10 
 
 
-Similarly for the deduplicated version of the 'large.txt' the command used:
-hadoop jar /opt/hadoop/hadoop-0.20.2/contrib/streaming/hadoop-0.20.2-streaming.jar -input /user/s0840844/data/input/large_lower_dedup.txt -output /user/s0840844/data/output -mapper mapper_wc.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/mapper_wc.py -reducer reducer_wc.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/reducer_wc.py -jobconf mapred.reduce.tasks=1 -jobconf mapred.map.tasks=10 
+Similarly for the deduplicated version of the 'large.txt, the streaming utility commands used are as follows:
+hadoop jar /opt/hadoop/hadoop-0.20.2/contrib/streaming/hadoop-0.20.2-streaming.jar -input /user/s0840844/data/input/large_lower_dedup.txt -output /user/s0840844/data/output -mapper mapper_wc.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/mapper_wc.py -reducer reducer_wc.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/reducer_wc.py -jobconf mapred.reduce.tasks=10 -jobconf mapred.map.tasks=10 
+
+To aggregate counts:
+hadoop jar /opt/hadoop/hadoop-0.20.2/contrib/streaming/hadoop-0.20.2-streaming.jar -input data/input5/part-00000 -input data/input5/part-00001 -input data/input5/part-00002 -input data/input5/part-00003 -input data/input5/part-00004 -input data/input5/part-00005 -input data/input5/part-00006 -input data/input5/part-00007 -input data/input5/part-00008 -input data/input5/part-00009 -output data/output -mapper cat -reducer reducer_wc.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/reducer_wc.py -jobconf mapred.reduce.tasks=1 -jobconf mapred.map.tasks=10 
 
 
  Exact counting method
@@ -256,7 +263,7 @@ hadoop jar /opt/hadoop/hadoop-0.20.2/contrib/streaming/hadoop-0.20.2-streaming.j
  large_lower_dedup.txt      3148155	49369862
 
 Observation:
-The numbers observed satisfy the expected pattern. Due to the removal of duplicate sentences, the deduplicated version wil have less number of sentences and words.
+The numbers observed satisfy the expected pattern. Due to the removal of duplicate sentences, the deduplicated version will have lesser number of sentences and words.
  
 b) Using the Probabilistic counting method, the following commands have been executed to get approximate sentence and word counts:
 
@@ -397,7 +404,7 @@ hadoop jar /opt/hadoop/hadoop-0.20.2/contrib/streaming/hadoop-0.20.2-streaming.j
 ---Question 7---
 # To take advantage of the shared-nothing architecture and to reduce the amount of computational load on a single node, I have used multiple reducers when running the map-reduce job to count the exact (and approximate )frequencies of all three word sequences that occur in a given text file. Utilizing  muliple reducers leads to the resultant output being partitioned according to the number of specified reduce tasks. Therefore to retrieve the top twenty three word sequences it is necessary to use  and combine data from all the output partitions.
 
-Before submitting a map-reduce job that ranks the exact(approsimate)frequencies of all three word sequences in descending order, I first stored the outputs of the map-reduce jobs completed for the previous question under the '/user/s0840844/data' directory. The output of the MapReduce job that uses the exact counting method have been stored in 'data/input2' while the the output of the MapReduce job that uses the exact counting method have been stored in 'data/input3' 
+Before submitting a map-reduce job that ranks the exact(approsimate)frequencies of all three word sequences in descending order, I first stored the outputs of the completed map-reduce jobs  for the previous question under the '/user/s0840844/data' directory. The output of the MapReduce job that uses the exact counting method have been stored in 'data/input2' while the the output of the MapReduce job that uses the exact counting method have been stored in 'data/input3' 
 
 
 To rank the the three word sequences according to their exact frequencies, I have used the following command:
