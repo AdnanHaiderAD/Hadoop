@@ -1,10 +1,10 @@
 ----Question 1------
 
-#The Hadoop Streaming utility command that I have used for this task to produce lower-case versions of  text files is as follows:
+The Hadoop Streaming utility command that I have used  to produce lower-case versions of  text files is as follows:
  
 hadoop jar /opt/hadoop/hadoop-0.20.2/contrib/streaming/hadoop-0.20.2-streaming.jar -input /user/s0840844/data/input/large.txt -output /user/s0840844/data/output -mapper mapper-lowercase.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/mapper-lowercase.py -reducer cat -jobconf mapred.reduce.tasks=1 -jobconf mapred.map.tasks=10
 
-#The mapper used for this job is an executable python script which is defined as follows: 
+The mapper used for this job is an executable python script which is defined as follows: 
 
 #Mapper: mapper-lowercase.py 
 #The input text file is split into lines and is fed to the stdin of the mapper process 
@@ -17,16 +17,15 @@ for line in sys.stdin:
 	print line[:-1]
 
 
-#The use of multiple mappers takes of advantage of hadoop's share-nothing architecture. 	
-#The number of mappers and reducers used for the above job have been set to one.
-# The reducer here is the cat function which can seen as an identity map of the map outputs. Since we want the job to produce only 1 output file, it is therefore necessary to use just 1 reducer. 
-
+The use of multiple mappers takes advantage of Hadoops shared-nothing architecture and 	
+As specified by the question, the output must be a lowercase version of the file, hence the number of reducers used for the above job have been set to one.
+The reducer here is the cat function which can seen as an identity map of the map outputs. 
 
 
 ---Question 2----
 
-#To remove duplicate sentences from the lower-cased version of the large.txt file, I have written the following executable scripts for the mapper and reducer functions:
-# The executable script used to perform the mapper's task :
+To remove duplicate sentences from the lower-cased version of the large.txt file, I have written the following executable scripts for the mapper and reducer functions:
+ The executable script used to perform the mapper's task :
 #Mapper: mapper-lowercasededup.py
 
 
@@ -46,7 +45,7 @@ for line in sys.stdin:
 		continue
 
 
-#The executable script created to perform the reducer task is:
+The executable script created to perform the reducer task is:
 #Reducer: reducer-lowercasededup.py
 
 #! /usr/bin/python
@@ -66,28 +65,28 @@ for line in sys.stdin:
 
 
 
-#The use of 'line.strip()' in both these scripts removes whitespace characters from the front and back end of each line which thus allows sentences to b compared based on words only. The output of the above MapReduce execution will sometimes differ to the  output produced of the shell 'sort -u file.txt' command . Lets consider the following example:
+The use of 'line.strip()' in both these scripts removes whitespace characters from the front and back end of each line which thus allows sentences to b compared based on words only. The output of the above MapReduce execution will sometimes differ to the  output produced of the shell 'sort -u file.txt' command that sorts and removes duplicate lines from text files . Lets consider the following example:
 
-#Let the text file be test.txt whose contents are :
+Let the text file be test.txt whose contents are :
 "
-  hello this is me
-nope this is not me
+  Hello this is me
+Nope this is not me
 hello this is me
-nope this is not me
-nope this is me
+Nope this is not me
+Nope this is me
 haha
 haha yea
 haha"
 
-#Now the  shell command ' sort -u test.txt ' outputs the following 'unique'  lines :
-  hello this is me
+Now the  shell command ' sort -u test.txt ' outputs the following 'unique'  lines :
+  Hello this is me
 haha
 haha yea
 hello this is me
-nope this is me
-nope this is not me
+Nope this is me
+Nope this is not me
 
-#This command utilizes whitespace characters at the beginning of the text to distinguish sentences even when their content is the same.
+This command utilizes whitespace characters at the beginning of the text to distinguish sentences even when their content is the same.
 
 
 wheres the "cat test| python mapper-lowercasededup.py|sort|python reducer-lowercasededup.py " outputs only unique sentences based on content:
@@ -98,22 +97,22 @@ haha
 haha yea
 
 
-#The Hadoop Streaming utility command that I have used for this task:
+The Hadoop Streaming utility command that I have used to run the job:
 
 hadoop jar /opt/hadoop/hadoop-0.20.2/contrib/streaming/hadoop-0.20.2-streaming.jar -input /user/s0840844/data/input/large_lower.txt -output /user/s0840844/data/output -mapper mapper-lowercasededup.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/mapper-lowercasededup.py -reducer reducer-lowercasededup.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/reducer-lowercasededup.py -jobconf mapred.reduce.tasks=1 -jobconf mapred.map.tasks=10 -jobconf stream.map.output.field.separator=
 
-#The input data is split into shards. Each map task is associated with a single block of data. In situations where duplicate copies of a sentence are located at different blocks which are not processed by the same mapper, the detection and removal of these duplicates will fail. To address this issue, I have added the following command in the jobconf option :"-jobconf stream.map.output.field.separator= " . Defining the field separator of map outputs to be the empty string results in entire sentences being considered as keys.This will guarantee that identical strings are grouped together during the 'Shuffle and Sort' phase before being fed to the reducer.
-#The use of multiple mappers takes of advantage of hadoop's share-nothing architecture. And since the output of the job is one file, hence the number of reducers used is one. 			
+#The input data is split into shards. Each map task is associated with a single block of data. In situations where duplicate copies of a sentence are located at different blocks which are not processed by the same mapper, the detection and removal of these duplicates will fail at the map stage. To address this issue, I have added the following command in the jobconf option :"-jobconf stream.map.output.field.separator= " . Defining the field separator of map outputs to be the empty string results in entire sentences being considered as keys.This will guarantee that identical strings are grouped together during the 'Shuffle and Sort' phase before being fed to the reducer. The reducer reads lines from stdin sequentially and stores a copy of the previous line that has it has read in its buffer which it uses to output only unique sentences to stdout.
+#The use of multiple mappers takes of advantage of hadoop's share-nothing architecture. As specified by the question, the output must be a lowercase deduplicated version of the file, hence the number of reducers used for the above job have been set to one.	
 
 
 
 ----Question 3----
-#The task in this section involves implementing an exact version of the shell wc command. 
+The task in this section involves implementing an exact version of the shell wc command. 
 
-#The contents of the text files used  for this assignment comprise of Web data.  Web data consists of both alphanumeric and non-alphanumeric characters such as '{,'\' etc. The wc shell command uses the '\w' and '\n'  characters to segment lines into words and hence strings  like "/^(([^()[\]\\" are now considered as words. 
-#To address this issue, I have created two different versions of the executable  script that implements the map function.
+The contents of the text files used  for this assignment comprise of Web data.  Web data consists of both alphanumeric and non-alphanumeric characters such as '{,'\' etc. The wc shell command uses the  whitespace '\w' and newline '\n'  characters to segment lines into words and hence strings  like "/^(([^()[\]\\" are now considered as words. 
+To address this issue, I have created two different versions of the executable  script that implements the map function.
 
-#In version 1, The script that I have written to perform the map task is defined below:
+In version 1, The script that I have written to perform the map task is defined below:
 #Mapper:mapper_wc.py 
 
 #! /usr/bin/python
@@ -123,19 +122,20 @@ import sys,re
 for line in sys.stdin:
 	#removing non-alphanumeric characters
 	#line= ' '.join(word for word in line.split() if word.isalnum())
+	
 	words= line.split()#segmenting the line into a list of words using the whitespace character
 	numberOfWords=len(words)
 	print '%s\t%s' % (1,numberOfWords) # key =1(The number of current lines the mapper is reading which is always 1) and value= number of words in the line.
 
 
 
-#The output of each mapper is of the form "1 wordcount" where key=1(the current line)  and value=wordcount 
+The output of each mapper is of the form "1 wordcount" where key=1(the number of lines the mapper is currently reading )  and value=wordcount 
 
-# Where as in version 2, the line " ' '.join(word for word in line.split() " has been uncommneted. This  ensures  non-alphanumeric strings like '/^(([^()[\]\\' have been filtered out if sentences before performing word counts because in english language we generally regard words as strings of alphanumeric characters that have semantic relevance.. 
+Where as in version 2, the line " ' '.join(word for word in line.split() " has been uncommented. This  ensures  non-alphanumeric strings like '/^(([^()[\]\\' are removed from sentences before performing word counts because in english language we generally regard words as strings of alphanumeric characters that have semantic relevance.
 
 
 
-# The executable script created to perform the functions of the reducer is as follows:
+The executable script created to perform the functions of the reducer is as follows:
 #Reducer: reducer_wc.py
 #! /usr/bin/python
 
@@ -149,11 +149,28 @@ for line in sys.stdin:
 	wordCount= wordCount+int(wordnum)
 print'%s\t%s' % (lineCount,wordCount)	
 
-# To test the mapper and reducer script, the input file used for this task is "small.txt"
-#The command used to run the map reduce job :
 
+To compare the outputs produced by the two versions of Map Reduce program,  I have tested both versions on the text file 'small.txt' in order to compare their performance.  
+
+Using version 1 of the mapper function, the unix commands used to run this job:
+cat small.txt |python mapper_wc.py |sort |python reducer_wc.py 
+10000	149552
+
+Using version 2 of the mapper function, 
+cat small.txt |python mapper_wc.py |sort |python reducer_wc.py 
+10000	123763
+
+
+Now in Unix, running the command  ' wc small.txt' outputs:
+10000  149552 1014062 small.txt
+
+#As the aim of this task is to emulate the exact behaviour of the 'wc' command, therefore for the remaining excercises I have used the first version of the mapper executable script.
+
+
+On Hadoop, the following utility command can be used to run the above Map Reduce 
 hadoop jar /opt/hadoop/hadoop-0.20.2/contrib/streaming/hadoop-0.20.2-streaming.jar -input /user/s0840844/data/input/small.txt -output /user/s0840844/data/output -mapper mapper_wc.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/mapper_wc.py -reducer reducer_wc.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/reducer_wc.py -jobconf mapred.reduce.tasks=1 -jobconf mapred.map.tasks=10 
 
+To ensure that the results are stored in 1 file, the number of reducers is set to 1.
 
 Using version 1 of the mapper function , the resultant map-reduce output is :
 hadoop dfs -cat data/output/part-00000
@@ -163,16 +180,11 @@ Using version 2 of the mapper,function,the resultant map-reduce output is:
 hadoop dfs -cat data/output/part-00000
 10000	123763
 
-Now when we execute the command 'wc small.txt"
-We get :
-10000  149552 1014062 small.txt
-
-Therefore to emulate the exact behaviour of the 'wc' command , the first version of the mapper function must be used along with the executable reducer script.
 
 ---Question 4---
-#Exact counting methods achieve 100% accuracy at the expense of of high memory usage.In situations whee the emphasis on the performance level is greater than on the error rate, randomized counting methods can be implemented. Randomized counting methods aim to  allocate the smallest amount of space possible to  the counter through down-sampling the events.
+#Exact counting methods achieve 100% accuracy at the expense of of high memory usage. In situations where the emphasis on the performance level is greater than on the error rate, randomized counting methods can be implemented. Randomized counting methods aim to  allocate the smallest amount of space possible to the counter by down-sampling the events. For this task, probabilistic counting method is used to approximate counts. The central idea behind this methodology is that the exact count is approximated by the number b^f where b is fixed and f is exponent. The algorithm employs downsampling to increment the counter of f. Hence by storing exponents instead of actual counts, we therefore save a lot of memory space at the cost of accuracy.
 
-#To make approximate counts for the number of words, I have written and implmented the following executable mapper and reducer scripts that employ probabilistic counting 
+#To make approximate counts for the number of words, I have written and implmented the following executable mapper and reducer scripts that uses probabilistic counting: 
 
 #Mapper : mapper_wc_prob.py
 #! /usr/bin/python
@@ -188,16 +200,16 @@ for line in sys.stdin:
 
 
 
-#The reducer used is:
 Reducer used:
+
 #! /usr/bin/python
 import sys,random
 counter=0
 random.seed(random.randint(1,1000))
 for line in sys.stdin:
-	#count=1 
+	#count =1
 	count=int(line.strip())
-	if random.random()< pow(2,-counter):# if random number generated < b^(-f) where b =2 then increment the  counter by 1
+	if random.random()< pow(2,-counter):# if the random number generated < b^(-f) where b =2 then increment the  counter by 1
 		counter+=1
 		random.seed(random.randint(1,1000))# the random number generator is reinitialized to a different seed to ensure that the numbers generated resemble to numbers generated from a uniform distribution between 0 and 1
 	else:
@@ -205,68 +217,86 @@ for line in sys.stdin:
 print counter
 				
 
-Similarly to make an approximate count on the number of lines: I have the 'cat' function as my mapper and the same reducer executable script as above with "count=int(line.strip())" commented out and "count=1" uncommented				
+Similarly to make an approximate count on the number of lines: I have the 'cat' function as my mapper and the same reducer executable script as above with "count=int(line.strip())" commented out and "count=1" uncommented.				
 			
 Testing the probabilistic counting program on the small.txt file:
 
-linecount:
-hadoop jar /opt/hadoop/hadoop-0.20.2/contrib/streaming/hadoop-0.20.2-streaming.jar -input /user/s0840844/data/input/large_lower_dedup.txt -output /user/s0840844/data/output -mapper cat -reducer reducer_wc_prob.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/reducer_wc_prob.py -jobconf mapred.reduce.tasks=1 
+To get an approximate linecount, the hadoop utility command that I have used is as follows:
 
+hadoop jar /opt/hadoop/hadoop-0.20.2/contrib/streaming/hadoop-0.20.2-streaming.jar -input /user/s0840844/data/input/small.txt -output /user/s0840844/data/output -mapper cat -reducer reducer_wc_prob.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/reducer_wc_prob.py -jobconf mapred.reduce.tasks=1 
 
 hadoop dfs -cat data/output/part-00000
+13
+Therefore the approximate line count is 2^13=8192
 
 
+Similarly, to get an approximate wordcount, the corresponding streaming utility commnad used is:
 hadoop jar /opt/hadoop/hadoop-0.20.2/contrib/streaming/hadoop-0.20.2-streaming.jar -input /user/s0840844/data/input/small.txt -output /user/s0840844/data/output -mapper mapper_wc_prob.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/mapper_wc_prob.py -reducer reducer_wc_prob.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/reducer_wc_prob.py -jobconf mapred.reduce.tasks=1 
 
 hadoop dfs -cat data/output/part-00000
-17
+18
+
+Therefore the approximate word count is 2^18=262144
 
 
 ----Question 5-----------
+Note : For all jobs the number of reducers is set to 1 in order to ensure that the results are stored in 1 file, .
 
-
- 
+The hadoop utility command used to find the total number of sentences and words in the 'large.txt':
 hadoop jar /opt/hadoop/hadoop-0.20.2/contrib/streaming/hadoop-0.20.2-streaming.jar -input /user/s0840844/data/input/large.txt -output /user/s0840844/data/output -mapper mapper_wc.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/mapper_wc.py -reducer reducer_wc.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/reducer_wc.py -jobconf mapred.reduce.tasks=1 -jobconf mapred.map.tasks=10 
 
 
+Similarly for the deduplicated version of the 'large.txt' the command used:
+hadoop jar /opt/hadoop/hadoop-0.20.2/contrib/streaming/hadoop-0.20.2-streaming.jar -input /user/s0840844/data/input/large_lower_dedup.txt -output /user/s0840844/data/output -mapper mapper_wc.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/mapper_wc.py -reducer reducer_wc.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/reducer_wc.py -jobconf mapred.reduce.tasks=1 -jobconf mapred.map.tasks=10 
 
 
  Exact counting method
  text file		(line count)  (word count)
- large.txt                   5000000	57049385
- large_lower_dedup.txt       3148155	40819535
+ large.txt                  5000000	69760386
+ large_lower_dedup.txt      3148155	49369862
 
+Observation:
+The numbers observed satisfy the expected pattern. Due to the removal of duplicate sentences, the deduplicated version wil have less number of sentences and words.
  
- Probabilistic counting method
+b) Using the Probabilistic counting method, the following commands have been executed to get approximate sentence and word counts:
 
-
-
-line count:
+The utility command used to get an approximate line count for the 'large.txt':
 hadoop jar /opt/hadoop/hadoop-0.20.2/contrib/streaming/hadoop-0.20.2-streaming.jar -input /user/s0840844/data/input/large.txt -output /user/s0840844/data/output -mapper cat -reducer reducer_wc_prob.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/reducer_wc_prob.py -jobconf mapred.reduce.tasks=1 
-
 
 hadoop dfs -cat data/output/part-00000
 21
 
-
+Similarly, for the dedeuplicated version the command used is as follows:
 hadoop jar /opt/hadoop/hadoop-0.20.2/contrib/streaming/hadoop-0.20.2-streaming.jar -input /user/s0840844/data/input/large_lower_dedup.txt -output /user/s0840844/data/output -mapper cat -reducer reducer_wc_prob.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/reducer_wc_prob.py -jobconf mapred.reduce.tasks=1 
 
 hadoop dfs -cat data/output/part-00000
 21
 
 
-Wordcount:
+Now,to estimate the wordcount of the 'large.txt' I have used the following command:
 hadoop jar /opt/hadoop/hadoop-0.20.2/contrib/streaming/hadoop-0.20.2-streaming.jar -input /user/s0840844/data/input/large.txt -output /user/s0840844/data/output -mapper mapper_wc_prob.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/mapper_wc_prob.py -reducer reducer_wc_prob.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/reducer_wc_prob.py -jobconf mapred.reduce.tasks=1 
 
+hadoop dfs -cat data/output/part-00000
+25
+
+hadoop jar /opt/hadoop/hadoop-0.20.2/contrib/streaming/hadoop-0.20.2-streaming.jar -input /user/s0840844/data/input/large_lower_dedup.txt -output /user/s0840844/data/output -mapper mapper_wc_prob.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/mapper_wc_prob.py -reducer reducer_wc_prob.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/reducer_wc_prob.py -jobconf mapred.reduce.tasks=1
 
 hadoop dfs -cat data/output/part-00000
 25
 
- hadoop jar /opt/hadoop/hadoop-0.20.2/contrib/streaming/hadoop-0.20.2-streaming.jar -input /user/s0840844/data/input/large_lower_dedup.txt -output /user/s0840844/data/output -mapper mapper_wc_prob.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/mapper_wc_prob.py -reducer reducer_wc_prob.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/reducer_wc_prob.py -jobconf mapred.reduce.tasks=1
+ Probabilistic counting method
+ text file		(line count)       (word count)
+ large.txt                  2^21=2097152        2^25=   33554432
+ large_lower_dedup.txt      2^21=2097152	2^25=   33554432
 
-hadoop dfs -cat data/output/part-00000
-25
+Observation:
+Randomized counting methods aim to reduce the amount of memory space at the cost of accuracy. Hence it is expected that none of these numbers correspond to exact figures.
 
+At first glance it might seem strange to an observer to see that the algorithm generates the same approximations for the line count and word count even though the deduplicated version contains less sentences and words. As I have already mentioned, the exact count is approximated by the number b^f (where b here is fixed and equal to 2 and f is exponent) and the algorithm employs downsampling to increment the counter of f. Thus on average, it takes 1 impulse for the counter to go from value 0 to value 1, then on average 2 more impulses to from 1 to 2, then on average 4 more impulses from 2 to 3, and so forth. By impulse here, I mean the number of lines the reducer has encountered so far. Therefore, in the case of counting words, to increment the counter of f to 26, the reducer on average must have seen 2^26= 67108864 words > the actual number of words in large.txt due to which the counter's increment has stopped after 25.
+
+However, since this is a randomized method, it is also possible for the approximate counts to exceed the actual count on different runs. 
+For example, when I ran the randomized version of the word counting algorithm again, I got the value of f to be 26 for the 'large.txt' and 25 for the deduplicated version.
+Reason: Although the number 1/(2^f) decreases exponentially as f increases, in some runs, it is possible to generate random numbers which are less that 1/(2^f) even when f is large. 
 
 
 ----Question 6-----
