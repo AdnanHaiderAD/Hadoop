@@ -446,7 +446,7 @@ The twenty most frequent sequences found by the randomized method :
 three-word sequeces	Exponent f(b^f represents an approximate count)
 as well as		44	
 one of the		43	
-it is a	41	
+it is a			41	
 new meetup groups	40	
 some of the		40	
 the university of	40	
@@ -458,7 +458,7 @@ the use of		39
 see all leads		39	
 a number of		38	
 the end of		38	
-to be a	38	
+to be a			38	
 you want to		38	
 if you are		38	
 of the most		38	
@@ -532,8 +532,7 @@ Probabiilistic method
 ----Question 10--------
 
 
-For the last task, I have run the following hadoop utility commands three times to observe the top 20 most frequent three-word sequences produced by the randomised version of the three-word sequence counting program:
-
+For the last task, I have run the following hadoop utility commands three times to observe the top 20 most frequent three-word sequences produced by employing a probabilistic counting method:
 
 hadoop jar /opt/hadoop/hadoop-0.20.2/contrib/streaming/hadoop-0.20.2-streaming.jar -input /user/s0840844/data/input/large_lower_dedup.txt -output /user/s0840844/data/output -mapper mapper_wdseq.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/mapper_wdseq.py -reducer reducer_wdseq_prob.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/reducer_wdseq_prob.py -jobconf mapred.reduce.tasks=10 -jobconf mapred.map.tasks=10			
 
@@ -590,41 +589,42 @@ out of the		12
 
 
 Output produced by the third run:
-some of the	14	
-a variety of	13	
+three-word sequeces	Exponent f(b^f represents an approximate count)[ b is set to its default value 2]
+some of the		14	
+a variety of		13	
 the united states	13	
-you have to	13	
-this is a	13	
-is one of	13	
-in the united	13	
-in new meetup	13	
-mont da klask	12	
-it was a	12	
-back in the	12	
-the time of	12	
-new york times	12	
-in the and	12	
-as well as	12	
-out of the	12	
-here are some	12	
-there was a	12	
-version of the	12	
-in the same	12
+you have to		13	
+this is a		13	
+is one of		13	
+in the united		13	
+in new meetup		13	
+mont da klask		12	
+it was a		12	
+back in the		12	
+the time of		12	
+new york times		12	
+in the and		12	
+as well as		12	
+out of the		12	
+here are some		12	
+there was a		12	
+version of the		12	
+in the same		12
 
 Observation:
-
+The approximate count of each three-word sequence is given by 2^f where f denotes the number of times the reducer downsamples observations corresponding to a particular sequence. The Second sorting  utility provided by Hadoop uses these exponents f to sort the three-word sequences. The estimates of the true frequencies  for each three word sequence is  inaccurate up to a binary order of magnitude. Compared to the list produced by the exact method, the top twenty most frequent three-word sequences found by the randomised version is fairly inaccurate in all 3 runs. On close inspection, it can be observed that there is a considerable variance associated with the rankings. Although the rankings of the top 6 three-word sequences is fairly consistent through out the  3 runs, the order in which the other sequences are ranked changes from run to run. For example: in the first run, the 19th and 20th most frequent three word sequences are " version of the" and "in the same", whereas in the 2nd run  these sequences are "as well as" and "out of the"  and finally in the 3rd run, the corresponding sequences are  " version of the" and "in the same".
 
 
 
 
 Method Used to reduce variance:
-	
+The var	
 
 The twenty most frequent sequences found by the randomized method :
 three-word sequeces	Exponent f(b^f represents an approximate count)
 as well as		44	
 one of the		43	
-it is a	41	
+it is a			41	
 new meetup groups	40	
 some of the		40	
 the university of	40	
@@ -636,7 +636,7 @@ the use of		39
 see all leads		39	
 a number of		38	
 the end of		38	
-to be a	38	
+to be a			38	
 you want to		38	
 if you are		38	
 of the most		38	
@@ -650,7 +650,17 @@ be able to		38
 
 Limitation:
 
+hadoop jar /opt/hadoop/hadoop-0.20.2/contrib/streaming/hadoop-0.20.2-streaming.jar -input /user/s0840844/data/input/large.txt -output /user/s0840844/data/output -mapper mapper_wc_prob.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/mapper_wc_prob.py -reducer reducer_wc_prob.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/reducer_wc_prob.py -jobconf mapred.reduce.tasks=1 
 
 
+
+25
+26
+26
+
+
+89
+90
+89
 
 
