@@ -654,17 +654,29 @@ Compared to the older version, the new version provides a more accurate ranking 
 
 Limitation:
 
+Although using a smaller base increases the frequency of updates for a counter, the maximum frequency given by the probabilistic counting method on average will now be less than before. To illustrate this fact, I have run the hadoop utility command (discussed in Question 4) multiple times to get estimates of the word count corresponding to the large file  using b=2 and b=1.2: 
+
+
+Command Used:
 hadoop jar /opt/hadoop/hadoop-0.20.2/contrib/streaming/hadoop-0.20.2-streaming.jar -input /user/s0840844/data/input/large.txt -output /user/s0840844/data/output -mapper mapper_wc_prob.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/mapper_wc_prob.py -reducer reducer_wc_prob.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/reducer_wc_prob.py -jobconf mapred.reduce.tasks=1 
 
+Using b=2, Text file :'large.txt'
+Run  	Exponent f       Approximate word count 
+1       25		2^25 =33554432
+2	26		2^26 =67108864
+3	26		2^26 = 67108864
 
+The average approximate word count given the probabilistic method based on the above 3 runs: 55924053
 
-25
-26
-26
+Using b=2, Text file :'large.txt'
+Run  	Exponent f       Approximate word count 
+1       89		1.2^89=11146304
+2	90		1.2^90=13375565
+3	89		1.2^89=11146304
 
+The average approximate word count given the probabilistic method based on the above 3 runs: 11889391
 
-89
-90
-89
+The actual word count for the text file is 69760386. Using a base that results in a greater maximum frequency is more ideal with respect to this problem. As it can seen from the above, the maximum count given by the probabilistic counting menthod is closer to the actual count on average when we set b=2 than setting b=1.2.
+
 
 
