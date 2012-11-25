@@ -1,9 +1,9 @@
 #! /usr/bin/python
 
 import sys
-book =dict([])#data structure that talies up counts of three-word sequences
+book =dict([])#data structure that tallies up counts of three-word sequences
 for line in sys.stdin:
-	#removing non-alphanumeric characters	
+	#removing non-alphanumeric strings	
 	line= ' '.join(word for word in line.split() if word.isalnum())
 	wordlist= line.split()#using the white space chacracter to segment the string
 	for index,word in enumerate(wordlist):

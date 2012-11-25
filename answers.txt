@@ -320,7 +320,7 @@ Reason: Although the number 1/(2^f) decreases exponentially as f increases, in s
 import sys
 
 for line in sys.stdin:
-	#removing non-alphanumeric characters
+	#removing non-alphanumeric strings
 	line= ' '.join(word for word in line.split() if word.isalnum()) # ensures  non-alphanumeric strings like '/^(([^()[\]\\' are removed from sentences before performing three word sequence counts.
 	wordlist= line.split()#using the white space character to segment the string into a list of words. This command also removes the newline character '\n' at the end of each line(Each line read from std.in contains a string of characters followed by the newline character).
 	for index,word in enumerate(wordlist):
@@ -396,7 +396,7 @@ print '%s\t%s' % (prev_Seq,seq_counter)
 As the reducer sequentially reads lines of stdin, for each new sequence the reducer comes accross, the seed of the random number generator is re-initialized. This ensures that the sequence of random numbers generated doesnt depend on a particular seed.		
 	
 #The map-reduce job submitted to find the approximate frequency counts of all three-word sequences:
-hadoop jar /opt/hadoop/hadoop-0.20.2/contrib/streaming/hadoop-0.20.2-streaming.jar -input /user/s0840844/data/input/large_lower_dedup.txt -output /user/s0840844/data/output -mapper mapper_wdseq.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/mapper_wdseq.py -reducer reducer_wdseq_prob.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/reducer_wdseq_prob.py -jobconf mapred.reduce.tasks=5 -jobconf mapred.map.tasks=10			
+hadoop jar /opt/hadoop/hadoop-0.20.2/contrib/streaming/hadoop-0.20.2-streaming.jar -input /user/s0840844/data/input/large_lower_dedup.txt -output /user/s0840844/data/output -mapper mapper_wdseq.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/mapper_wdseq.py -reducer reducer_wdseq_prob.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/reducer_wdseq_prob.py -jobconf mapred.reduce.tasks=10 -jobconf mapred.map.tasks=10			
 
 
 
@@ -477,7 +477,7 @@ To take the advantage of local aggregation, the functionality of a combiner is i
 import sys
 book =dict([])#data structure that tallies up counts of three-word sequences
 for line in sys.stdin:
-	#removing non-alphanumeric characters	
+	#removing non-alphanumeric strings	
 	line= ' '.join(word for word in line.split() if word.isalnum())
 	wordlist= line.split()#using the white space chacracter to segment the string
 	for index,word in enumerate(wordlist):
@@ -526,3 +526,131 @@ Exact method
 	
 Probabiilistic method	
 	http://hcrc1425n01.inf.ed.ac.uk:50030/jobdetails.jsp?jobid=job_201211011108_0957
+
+
+
+----Question 10--------
+
+
+For the last task, I have run the following hadoop utility commands three times to observe the top 20 most frequent three-word sequences produced by the randomised version of the three-word sequence counting program:
+
+
+hadoop jar /opt/hadoop/hadoop-0.20.2/contrib/streaming/hadoop-0.20.2-streaming.jar -input /user/s0840844/data/input/large_lower_dedup.txt -output /user/s0840844/data/output -mapper mapper_wdseq.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/mapper_wdseq.py -reducer reducer_wdseq_prob.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/reducer_wdseq_prob.py -jobconf mapred.reduce.tasks=10 -jobconf mapred.map.tasks=10			
+
+Using Secondary sorting to list the top 20 most frequent three-word sequences:
+hadoop jar /opt/hadoop/hadoop-0.20.2/contrib/streaming/hadoop-0.20.2-streaming.jar -input data/input3/part-00000 -input data/input3/part-00001 -input data/input3/part-00002 -input data/input3/part-00003 -input data/input3/part-00004  -output data/output -mapper cat -reducer cat -jobconf stream.num.map.output.key.fields=2 -jobconf mapred.output.key.comparator.class=org.apache.hadoop.mapred.lib.KeyFieldBasedComparator -jobconf mapred.text.key.comparator.options=-k2,2nr -jobconf mapred.reduce.tasks=1
+
+Output produced by the first run:
+
+three-word sequeces	Exponent f(b^f represents an approximate count)[ b is set to its default value 2]
+some of the		14	
+a variety of		13	
+the united states	13	
+you have to		13	
+this is a		13	
+in new meetup		13	
+is one of		13	
+in the united		13	
+it comes to		12	
+part of the		12	
+there are many		12	
+this is not		12	
+we will be		12	
+there is a		12	
+mont da klask		12	
+it was a		12	
+back in the		12	
+the time of		12	
+version of the		12	
+in the same		12
+
+
+Output produced by the second  run:
+three-word sequeces	Exponent f(b^f represents an approximate count)[ b is set to its default value 2]
+some of the		14	
+a variety of		13	
+the united states	13	
+you have to		13	
+is one of		13	
+in the united		13	
+this is a		13	
+in new meetup		13	
+mont da klask		12	
+it was a		12	
+back in the		12	
+the time of		12	
+it comes to		12	
+part of the		12	
+there are many		12	
+this is not		12	
+we will be		12	
+there is a		12	
+as well as		12	
+out of the		12
+
+
+Output produced by the third run:
+some of the	14	
+a variety of	13	
+the united states	13	
+you have to	13	
+this is a	13	
+is one of	13	
+in the united	13	
+in new meetup	13	
+mont da klask	12	
+it was a	12	
+back in the	12	
+the time of	12	
+new york times	12	
+in the and	12	
+as well as	12	
+out of the	12	
+here are some	12	
+there was a	12	
+version of the	12	
+in the same	12
+
+Observation:
+
+
+
+
+
+Method Used to reduce variance:
+	
+
+The twenty most frequent sequences found by the randomized method :
+three-word sequeces	Exponent f(b^f represents an approximate count)
+as well as		44	
+one of the		43	
+it is a	41	
+new meetup groups	40	
+some of the		40	
+the university of	40	
+a lot of		40	
+this is the		40	
+if you have		39	
+this is a		39	
+the use of		39	
+see all leads		39	
+a number of		38	
+the end of		38	
+to be a	38	
+you want to		38	
+if you are		38	
+of the most		38	
+the fact that		38	
+be able to		38
+
+
+
+
+
+
+Limitation:
+
+
+
+
+
