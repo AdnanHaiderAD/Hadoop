@@ -415,26 +415,27 @@ To rank the the three word sequences according to their exact frequencies, I hav
 # The command "-jobconf mapred.text.key.comparator.options=-k2,2nr" performs secondary sorting   and hence sorts the outputs by the second field of the keys i.e the counts
 
 The twenty most frequent sequences found by the exact method :
-one of the	16659	
-as well as	11526	
-a lot of	8698	
-some of the	6827	
-if you are	6743	
-be able to	6045	
-part of the	6032	
-you want to	5740	
-this is a	5473	
-if you have	5459	
-in order to	5403	
-see all leads	5373	
-the end of	5186	
-to be a	        5112	
-there is a	4579	
+three-word sequences   count
+one of the		16659	
+as well as		11526	
+a lot of		8698	
+some of the		6827	
+if you are		6743	
+be able to		6045	
+part of the		6032	
+you want to		5740	
+this is a		5473	
+if you have		5459	
+in order to		5403	
+see all leads		5373	
+the end of		5186	
+to be a	        	5112	
+there is a		4579	
 the united states	4428	
-of the most	4384	
-out of the	4205	
-it is a	        4191	
-a number of	4166	
+of the most		4384	
+out of the		4205	
+it is a	        	4191	
+a number of		4166	
 
 
 Similarly, to rank the the three word sequences according to their approximate frequencies, I have used the corresponding following command with the same job configurations:
@@ -443,7 +444,7 @@ hadoop jar /opt/hadoop/hadoop-0.20.2/contrib/streaming/hadoop-0.20.2-streaming.j
 
 
 The twenty most frequent sequences found by the randomized method :
-three-word sequeces	Exponent f(b^f represents an approximate count)
+three-word sequences	Exponent f(b^f represents an approximate count)
 as well as		44	
 one of the		43	
 it is a			41	
@@ -541,7 +542,7 @@ hadoop jar /opt/hadoop/hadoop-0.20.2/contrib/streaming/hadoop-0.20.2-streaming.j
 
 Output produced by the first run:
 
-three-word sequeces	Exponent f(b^f represents an approximate count)[ b is set to its default value 2]
+three-word sequences	Exponent f(b^f represents an approximate count)[ b is set to its default value 2]
 some of the		14	
 a variety of		13	
 the united states	13	
@@ -565,7 +566,7 @@ in the same		12
 
 
 Output produced by the second  run:
-three-word sequeces	Exponent f(b^f represents an approximate count)[ b is set to its default value 2]
+three-word sequences	Exponent f(b^f represents an approximate count)[ b is set to its default value 2]
 some of the		14	
 a variety of		13	
 the united states	13	
@@ -589,7 +590,7 @@ out of the		12
 
 
 Output produced by the third run:
-three-word sequeces	Exponent f(b^f represents an approximate count)[ b is set to its default value 2]
+three-word sequences	Exponent f(b^f represents an approximate count)[ b is set to its default value 2]
 some of the		14	
 a variety of		13	
 the united states	13	
@@ -618,9 +619,12 @@ The approximate count of each three-word sequence is given by 2^f where f denote
 
 
 Method Used to reduce variance:
-The var	
+The variance associated with the frequency estimate given by the probabilistic counting  method is (b-1)*n*(n+1)/2 where n is the true frequency . In the default case where b=2, the corresponding variance becomes n*(n+1)/2. Using  values of between 1 and 2 reduces the variance associated with the approximate estimate and allows for more accurate estimates at the cost of a smaller maximum frequency, using the same number of bits. Hence for our three-word sequence counting problem, the sampling rate for each three word sequence is now greater on average thus resulting in a more accurate ranking. 
 
-The twenty most frequent sequences found by the randomized method :
+
+	
+
+By setting b=1.2 and running the twenty most frequent three word sequences, :
 three-word sequeces	Exponent f(b^f represents an approximate count)
 as well as		44	
 one of the		43	
@@ -644,7 +648,7 @@ the fact that		38
 be able to		38
 
 
-
+Compared to the older version, the new version provides a more accurate ranking for the top 20 most frequent word sequences.
 
 
 
