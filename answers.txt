@@ -244,7 +244,7 @@ Therefore the approximate word count is 2^18=262144
 The hadoop utility command used to find the total number of sentences and words in the 'large.txt':
 hadoop jar /opt/hadoop/hadoop-0.20.2/contrib/streaming/hadoop-0.20.2-streaming.jar -input /user/s0840844/data/input/large.txt -output /user/s0840844/data/output -mapper mapper_wc.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/mapper_wc.py -reducer reducer_wc.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/reducer_wc.py -jobconf mapred.reduce.tasks=10 -jobconf mapred.map.tasks=10 
 
-To take advantage of the shared-nothing architecture and to reduce the amount of computational load on a single node, multiple reducers have been used. .To aggregate the counts I have used the same executable reducer script and ran the following hadoop utility command :
+To take advantage of the shared-nothing architecture and to reduce the amount of computational load on a single node, multiple reducers have been used.To aggregate the counts I have used the same executable reducer script and ran the following hadoop utility command to run another MapReduce job on the output inorder to get the total tally :
 
 hadoop jar /opt/hadoop/hadoop-0.20.2/contrib/streaming/hadoop-0.20.2-streaming.jar -input data/output/part-00000 -input data/output/part-00001 -input data/output/part-00002 -input data/output/part-00003 -input data/output/part-00004 -input data/output/part-00005 -input data/input5/part-00006 -input data/output/part-00007 -input data/output/part-00008 -input data/output/part-00009 -output data/output2 -mapper cat -reducer reducer_wc.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/reducer_wc.py -jobconf mapred.reduce.tasks=1 -jobconf mapred.map.tasks=10 
 
@@ -355,7 +355,7 @@ The reducer reads lines from stdin sequentially. It stores a copy of the previou
 #The map-reduce job submitted to find the exact frequency counts of all three-word sequences:
 hadoop jar /opt/hadoop/hadoop-0.20.2/contrib/streaming/hadoop-0.20.2-streaming.jar -input /user/s0840844/data/input/large_lower_dedup.txt -output /user/s0840844/data/output -mapper mapper_wdseq.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/mapper_wdseq.py -reducer reducer_wdseq.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/reducer_wdseq.py -jobconf mapred.reduce.tasks=10 -jobconf mapred.map.tasks=10
 
-To reduce the computational load on a single node, multiple reducers have been used by the execution framework. The number of reducers used for the above MapReduce job has been specified during the submission of the MapReduce stream job.
+To reduce the computational load on a single node and to reduct the time taken to complete a job, multiple reducers have been specified in the userEnvironment side ofthe Hadoop job configuration.
 
 
 
@@ -401,12 +401,12 @@ hadoop jar /opt/hadoop/hadoop-0.20.2/contrib/streaming/hadoop-0.20.2-streaming.j
 ---Question 7---
 # To take advantage of the shared-nothing architecture and to reduce the amount of computational load on a single node, I have used multiple reducers when running the map-reduce job to count the exact (and approximate )frequencies of all three word sequences that occur in a given text file. Utilizing  muliple reducers leads to the resultant output being partitioned according to the number of specified reduce tasks. Therefore to retrieve the top twenty three word sequences it is necessary to use  and combine data from all the output partitions.
 
-Before submitting a map-reduce job that ranks the exact(approsimate)frequencies of all three word sequences in descending order, I first stored the outputs of the completed map-reduce jobs  for the previous question under the '/user/s0840844/data' directory. The output of the MapReduce job that uses the exact counting method have been stored in 'data/input2' while the the output of the MapReduce job that uses the exact counting method have been stored in 'data/input3' 
 
 
 To rank the the three word sequences according to their exact frequencies, I have used the following command:
+The input of this MapReduce job  is  the output of the job used to tally the exact three-word sequence counts.
 
- hadoop jar /opt/hadoop/hadoop-0.20.2/contrib/streaming/hadoop-0.20.2-streaming.jar -input data/input2/part-00000 -input data/input2/part-00001 -input data/input2/part-00002 -input data/input2/part-00003 -input data/input2/part-00004 -input data/input2/part-00005 -input data/input2/part-00006 -input data/input2/part-00007 -input data/input2/part-00008 -input data/input2/part-00009 -output data/output -mapper cat -reducer cat -jobconf stream.num.map.output.key.fields=2 -jobconf mapred.output.key.comparator.class=org.apache.hadoop.mapred.lib.KeyFieldBasedComparator -jobconf mapred.text.key.comparator.options=-k2,2nr -jobconf mapred.reduce.tasks=1
+hadoop jar /opt/hadoop/hadoop-0.20.2/contrib/streaming/hadoop-0.20.2-streaming.jar -input data/output/part-00000 -input data/output/part-00001 -input data/output/part-00002 -input data/output/part-00003 -input data/output/part-00004 -input data/output/part-00005 -input data/output/part-00006 -input data/output/part-00007 -input data/output/part-00008 -input data/output/part-00009 -output data/output2 -mapper cat -reducer cat -jobconf stream.num.map.output.key.fields=2 -jobconf mapred.output.key.comparator.class=org.apache.hadoop.mapred.lib.KeyFieldBasedComparator -jobconf mapred.text.key.comparator.options=-k2,2nr -jobconf mapred.reduce.tasks=1
 
 # The command "stream.num.map.output.key.fields=2" creates composite intermediate keys of the form (sequence,count)
 # The command "-jobconf mapred.text.key.comparator.options=-k2,2nr" performs secondary sorting   and hence sorts the outputs by the second field of the keys i.e the counts
@@ -435,9 +435,9 @@ it is a	        	4191
 a number of		4166	
 
 
-Similarly, to rank the the three word sequences according to their approximate frequencies, I have used the corresponding following command with the same job configurations:
+Similarly, to rank the the three word sequences according to their approximate frequencies, I have used the same command but the input this time is the output of the  job used to get the approximate three-word sequence counts.
 
-hadoop jar /opt/hadoop/hadoop-0.20.2/contrib/streaming/hadoop-0.20.2-streaming.jar -input data/input3/part-00000 -input data/input3/part-00001 -input data/input3/part-00002 -input data/input3/part-00003 -input data/input3/part-00004  -output data/output -mapper cat -reducer cat -jobconf stream.num.map.output.key.fields=2 -jobconf mapred.output.key.comparator.class=org.apache.hadoop.mapred.lib.KeyFieldBasedComparator -jobconf mapred.text.key.comparator.options=-k2,2nr -jobconf mapred.reduce.tasks=1
+
 
 
 The twenty most frequent sequences found by the randomized method :
@@ -516,13 +516,25 @@ sys	0m0.412s
 
 
 ---Question 9---
-
+To compare the amount of space used by the exact method to the size of the space used by randomized version, I have run the MapReduce jobs discussed in question 5 to find the exact and approximate counts for the number of sentences and words.
+The text file used is 'large.txt'
+The number of bytes  to store the exact sentence and word frequencies is 17
+Command used to check the number of bytes:
 hadoop dfs -cat data/output2/part-00000|wc -c
      17
+[Note The output of MapReduce jobs that involves using exact counting methods are stored in the data/output2 directory]
+Whereas using probabilistic method, the number bytes used to store approximate counts for the number of sentences and words is 8
 
+Number of bytes used to store approximate word counts=4
+[Note The output of MapReduce jobs that involves using approximate counting methods are stored in the data/output directory]
+Command used:
 hadoop dfs -cat data/output/part-00000|wc -c
 4
 
+Number of bytes used to store approximate sentence counts=4
+Command used:
+hadoop dfs -cat data/output/part-00000|wc -c
+4
 
 ----Question 10--------
 
