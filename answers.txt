@@ -399,11 +399,11 @@ hadoop jar /opt/hadoop/hadoop-0.20.2/contrib/streaming/hadoop-0.20.2-streaming.j
 
 
 ---Question 7---
-# To take advantage of the shared-nothing architecture and to reduce the amount of computational load on a single node, I have used multiple reducers when running the map-reduce job to count the exact (and approximate )frequencies of all three word sequences that occur in a given text file. Utilizing  muliple reducers leads to the resultant output being partitioned according to the number of specified reduce tasks. Therefore to retrieve the top twenty three word sequences it is necessary to use  and combine data from all the output partitions.
+# To take advantage of the shared-nothing architecture and to reduce the amount of computational load on a single node, I have used multiple reducers when running the map-reduce job to count the exact (and approximate )frequencies of all three word sequences that occur in a given text file. Utilizing  muliple reducers leads to the resultant output being partitioned according to the number of specified reduce tasks. Therefore to retrieve the top twenty three word sequences it is necessary to use  and combine data from all the output partitions and apply secondary sorting to sort the data according to frequency counts.
 
 
 
-To rank the the three word sequences according to their exact frequencies, I have used the following command:
+To rank the the three word sequences according to their exact frequencies, I have used the following command that employs secondary sorting:
 The input of this MapReduce job  is  the output of the job used to tally the exact three-word sequence counts.
 
 hadoop jar /opt/hadoop/hadoop-0.20.2/contrib/streaming/hadoop-0.20.2-streaming.jar -input data/output/part-00000 -input data/output/part-00001 -input data/output/part-00002 -input data/output/part-00003 -input data/output/part-00004 -input data/output/part-00005 -input data/output/part-00006 -input data/output/part-00007 -input data/output/part-00008 -input data/output/part-00009 -output data/output2 -mapper cat -reducer cat -jobconf stream.num.map.output.key.fields=2 -jobconf mapred.output.key.comparator.class=org.apache.hadoop.mapred.lib.KeyFieldBasedComparator -jobconf mapred.text.key.comparator.options=-k2,2nr -jobconf mapred.reduce.tasks=1
@@ -544,7 +544,7 @@ For the last task, I have run the following hadoop utility commands three times 
 hadoop jar /opt/hadoop/hadoop-0.20.2/contrib/streaming/hadoop-0.20.2-streaming.jar -input /user/s0840844/data/input/large_lower_dedup.txt -output /user/s0840844/data/output -mapper mapper_wdseq.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/mapper_wdseq.py -reducer reducer_wdseq_prob.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/reducer_wdseq_prob.py -jobconf mapred.reduce.tasks=10 -jobconf mapred.map.tasks=10			
 
 Using Secondary sorting to list the top 20 most frequent three-word sequences:
-hadoop jar /opt/hadoop/hadoop-0.20.2/contrib/streaming/hadoop-0.20.2-streaming.jar -input data/input3/part-00000 -input data/input3/part-00001 -input data/input3/part-00002 -input data/input3/part-00003 -input data/input3/part-00004  -output data/output -mapper cat -reducer cat -jobconf stream.num.map.output.key.fields=2 -jobconf mapred.output.key.comparator.class=org.apache.hadoop.mapred.lib.KeyFieldBasedComparator -jobconf mapred.text.key.comparator.options=-k2,2nr -jobconf mapred.reduce.tasks=1
+hadoop jar /opt/hadoop/hadoop-0.20.2/contrib/streaming/hadoop-0.20.2-streaming.jar -input data/output/part-00000 -input data/output/part-00001 -input data/output/part-00002 -input data/output/part-00003 -input data/output/part-00004 -input data/output/part-00005 -input data/output/part-00006 -input data/output/part-00007 -input data/output/part-00008 -input data/output/part-00009 -output data/output2 -mapper cat -reducer cat -jobconf stream.num.map.output.key.fields=2 -jobconf mapred.output.key.comparator.class=org.apache.hadoop.mapred.lib.KeyFieldBasedComparator -jobconf mapred.text.key.comparator.options=-k2,2nr -jobconf mapred.reduce.tasks=1
 
 Output produced by the first run:
 
