@@ -18,7 +18,7 @@ for line in sys.stdin:
 
 
 The use of multiple mappers takes advantage of Hadoops shared-nothing architecture and 	
-As specified by the question, the output must be a lowercase version of the file, hence the number of reducers used for the above job have been set to one.
+As specified by the question, the output must be a lowercase version of the file, hence the number of reducers used for the above job have been set to one .
 The reducer here is the cat function which can seen as an identity map of the map outputs. 
 
 
@@ -102,7 +102,7 @@ The Hadoop Streaming utility command that I have used to run the job:
 hadoop jar /opt/hadoop/hadoop-0.20.2/contrib/streaming/hadoop-0.20.2-streaming.jar -input /user/s0840844/data/input/large_lower.txt -output /user/s0840844/data/output -mapper mapper-lowercasededup.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/mapper-lowercasededup.py -reducer reducer-lowercasededup.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/reducer-lowercasededup.py -jobconf mapred.reduce.tasks=1 -jobconf mapred.map.tasks=10 -jobconf stream.map.output.field.separator=
 
 #The input data is split into shards. Each map task is associated with a single block of data. In situations where duplicate copies of a sentence are located at different blocks which are not processed by the same mapper, the detection and removal of these duplicates will fail at the map stage. To address this issue, I have added the following command in the jobconf option :"-jobconf stream.map.output.field.separator= " . Defining the field separator of map outputs to be the empty string results in entire sentences being considered as keys.This will guarantee that identical strings are grouped together during the 'Shuffle and Sort' phase before being fed to the reducer. The reducer reads lines from stdin sequentially and stores a copy of the previous line that has it has read in its buffer which it uses to output only unique sentences to stdout.
-#The use of multiple mappers takes of advantage of hadoop's share-nothing architecture. As specified by the question, the output must be a lowercase deduplicated version of the file, hence the number of reducers used for the above job have been set to one.	
+#The use of multiple mappers takes of advantage of hadoop's share-nothing architecture. As specified by the question, the output must be a lowercase deduplicated version of the file, hence here as well the number of reducers used for the above job have been set to one.	
 
 
 
@@ -170,7 +170,7 @@ Now in Unix, running the command  ' wc small.txt' outputs:
 On Hadoop, the following utility command can be used to run the above Map Reduce 
 hadoop jar /opt/hadoop/hadoop-0.20.2/contrib/streaming/hadoop-0.20.2-streaming.jar -input /user/s0840844/data/input/small.txt -output /user/s0840844/data/output -mapper mapper_wc.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/mapper_wc.py -reducer reducer_wc.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/reducer_wc.py -jobconf mapred.reduce.tasks=1 -jobconf mapred.map.tasks=10 
 
-To ensure that the results are stored in 1 file, the number of reducers is set to 1.
+Since the size of the file is small and to ensure that the results are stored in 1 file, the number of reducers is set to 1.
 
 Using version 1 of the mapper function , the resultant map-reduce output is :
 hadoop dfs -cat data/output/part-00000
@@ -240,22 +240,19 @@ Therefore the approximate word count is 2^18=262144
 
 
 ----Question 5-----------
-Note : For all jobs the number of reducers is set to 1 in order to ensure that the results are stored in 1 file, .
 
 The hadoop utility command used to find the total number of sentences and words in the 'large.txt':
 hadoop jar /opt/hadoop/hadoop-0.20.2/contrib/streaming/hadoop-0.20.2-streaming.jar -input /user/s0840844/data/input/large.txt -output /user/s0840844/data/output -mapper mapper_wc.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/mapper_wc.py -reducer reducer_wc.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/reducer_wc.py -jobconf mapred.reduce.tasks=10 -jobconf mapred.map.tasks=10 
 
-To take advantage of the shared-nothing architecture and to reduce the amount of computational load on a single node, multiple reducers have been used. The outputs of the completed map-reduce jobs  are stored temporarily in the '/user/s0840844/data.input5' directory.To aggregate the counts I have used the same executable reducer script and ran the following hadoop utility command :
+To take advantage of the shared-nothing architecture and to reduce the amount of computational load on a single node, multiple reducers have been used. .To aggregate the counts I have used the same executable reducer script and ran the following hadoop utility command :
 
-hadoop jar /opt/hadoop/hadoop-0.20.2/contrib/streaming/hadoop-0.20.2-streaming.jar -input data/input5/part-00000 -input data/input5/part-00001 -input data/input5/part-00002 -input data/input5/part-00003 -input data/input5/part-00004 -input data/input5/part-00005 -input data/input5/part-00006 -input data/input5/part-00007 -input data/input5/part-00008 -input data/input5/part-00009 -output data/output -mapper cat -reducer reducer_wc.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/reducer_wc.py -jobconf mapred.reduce.tasks=1 -jobconf mapred.map.tasks=10 
-
+hadoop jar /opt/hadoop/hadoop-0.20.2/contrib/streaming/hadoop-0.20.2-streaming.jar -input data/output/part-00000 -input data/output/part-00001 -input data/output/part-00002 -input data/output/part-00003 -input data/output/part-00004 -input data/output/part-00005 -input data/input5/part-00006 -input data/output/part-00007 -input data/output/part-00008 -input data/output/part-00009 -output data/output2 -mapper cat -reducer reducer_wc.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/reducer_wc.py -jobconf mapred.reduce.tasks=1 -jobconf mapred.map.tasks=10 
 
 Similarly for the deduplicated version of the 'large.txt, the streaming utility commands used are as follows:
 hadoop jar /opt/hadoop/hadoop-0.20.2/contrib/streaming/hadoop-0.20.2-streaming.jar -input /user/s0840844/data/input/large_lower_dedup.txt -output /user/s0840844/data/output -mapper mapper_wc.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/mapper_wc.py -reducer reducer_wc.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/reducer_wc.py -jobconf mapred.reduce.tasks=10 -jobconf mapred.map.tasks=10 
 
 To aggregate counts:
-hadoop jar /opt/hadoop/hadoop-0.20.2/contrib/streaming/hadoop-0.20.2-streaming.jar -input data/input5/part-00000 -input data/input5/part-00001 -input data/input5/part-00002 -input data/input5/part-00003 -input data/input5/part-00004 -input data/input5/part-00005 -input data/input5/part-00006 -input data/input5/part-00007 -input data/input5/part-00008 -input data/input5/part-00009 -output data/output -mapper cat -reducer reducer_wc.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/reducer_wc.py -jobconf mapred.reduce.tasks=1 -jobconf mapred.map.tasks=10 
-
+hadoop jar /opt/hadoop/hadoop-0.20.2/contrib/streaming/hadoop-0.20.2-streaming.jar -input data/output/part-00000 -input data/output/part-00001 -input data/output/part-00002 -input data/output/part-00003 -input data/output/part-00004 -input data/output/part-00005 -input data/input5/part-00006 -input data/output/part-00007 -input data/output/part-00008 -input data/output/part-00009 -output data/output2 -mapper cat -reducer reducer_wc.py -file /afs/inf.ed.ac.uk/user/s08/s0840844/ExtremeComputing/hadoop/assignmentCode/reducer_wc.py -jobconf mapred.reduce.tasks=1 -jobconf mapred.map.tasks=10 
 
  Exact counting method
  text file		(line count)  (word count)
@@ -520,14 +517,11 @@ sys	0m0.412s
 
 ---Question 9---
 
+hadoop dfs -cat data/output2/part-00000|wc -c
+     17
 
-Possible answer lies here 
-Exact method
- http://hcrc1425n01.inf.ed.ac.uk:50030/jobdetails.jsp?jobid=job_201211011108_0956
-	
-Probabiilistic method	
-	http://hcrc1425n01.inf.ed.ac.uk:50030/jobdetails.jsp?jobid=job_201211011108_0957
-
+hadoop dfs -cat data/output/part-00000|wc -c
+4
 
 
 ----Question 10--------
@@ -676,7 +670,7 @@ Run  	Exponent f       Approximate word count
 
 The average approximate word count given the probabilistic method based on the above 3 runs: 11889391
 
-The actual word count for the text file is 69760386. Using a base that results in a greater maximum frequency is more ideal with respect to this problem. As it can seen from the above, the maximum count given by the probabilistic counting menthod is closer to the actual count on average when we set b=2 than setting b=1.2.
+The actual word count for the text file is 69760377. Using a base that results in a greater maximum frequency is more ideal with respect to this problem. As it can seen from the above, the maximum count given by the probabilistic counting menthod is closer to the actual count on average when we set b=2 than setting b=1.2.
 
 
 
