@@ -536,6 +536,8 @@ Command used:
 hadoop dfs -cat data/output/part-00000|wc -c
 4
 
+
+Therefore the exact method uses 9 more bytes to store counts than the randomised version.
 ----Question 10--------
 
 
